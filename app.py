@@ -2,97 +2,92 @@ import streamlit as st
 import pandas as pd
 
 st.set_page_config(page_title="Sélection de joueurs", layout="wide")
-st.title("🏉 Sélection de joueurs 🏉")
+st.title("🏉 Sélection de joueurs")
 
-# --- URL du fichier Excel Google Drive ---
-# ⚠️ Remplacer TON_ID_DE_FICHIER par l'ID réel du fichier Google Drive
+# --- URL directe Google Drive ---
 url = "https://drive.google.com/uc?export=download&id=1y2eiaLo3xM8xWREgdTrVEuPlWKniDVql"
 
-try:
-    df = pd.read_excel(url, engine="openpyxl")
+# --- Télécharger le fichier Excel ---
+df = pd.read_excel(url, engine="openpyxl")
 
-    # On ne garde que les colonnes utiles
-    colonnes_utiles = ["Nom", "Prénom", "Club", "1ere ligne", "Amical 2"]
-    df = df[colonnes_utiles]
+# Colonnes utiles
+colonnes_utiles = ["Nom", "Prénom", "Club", "1ere ligne", "Amical 2"]
+df = df[colonnes_utiles]
 
-    # Transformation de Amical 2 en symboles
-    mapping_amical = {"A": "❌", "P": "✅", "C": "❓"}
-    df["Amical 2"] = df["Amical 2"].map(mapping_amical).fillna("")
+# Transformation Amical 2
+mapping_amical = {"A": "❌", "P": "✅", "C": "❓"}
+df["Amical 2"] = df["Amical 2"].map(mapping_amical).fillna("")
 
-    st.subheader("Aperçu du fichier (colonnes filtrées)")
-    st.dataframe(df, use_container_width=True)
+st.subheader("Aperçu du fichier (colonnes filtrées)")
+st.dataframe(df, use_container_width=True)
 
-    # --- Sélection des joueurs ---
-    joueurs_selectionnes = st.multiselect(
-        "Choisir les joueurs :",
-        options=df["Nom"].tolist()
-    )
+# --- Initialisation de la session pour stocker les joueurs sélectionnés ---
+if "selection_joueurs" not in st.session_state:
+    st.session_state.selection_joueurs = []
 
-    if joueurs_selectionnes:
-        st.subheader("Configuration des joueurs sélectionnés")
+# --- Liste des numéros disponibles ---
+def numeros_disponibles():
+    attribues = [j["Numéro"] for j in st.session_state.selection_joueurs]
+    return [n for n in range(1, 24) if n not in attribues]
 
-        joueurs_config = []
+# --- Sélection des joueurs ---
+# On ne montre que les joueurs non encore choisis
+joueurs_disponibles = [j for j in df["Nom"].tolist() if j not in [s["Nom"] for s in st.session_state.selection_joueurs]]
 
-        for i, joueur in enumerate(joueurs_selectionnes, start=1):
-            ligne_joueur = df[df["Nom"] == joueur].iloc[0]
+joueur_choisi = st.selectbox("Choisir un joueur :", options=joueurs_disponibles)
 
-            st.markdown(f"### {joueur} ({ligne_joueur['Prénom']}) - {ligne_joueur['Club']}")
+if joueur_choisi:
+    ligne_joueur = df[df["Nom"] == joueur_choisi].iloc[0]
 
-            col1, col2, col3 = st.columns([1, 1, 2])
+    col1, col2, col3 = st.columns([1, 1, 2])
+    with col1:
+        numero = st.selectbox(
+            f"Numéro de {joueur_choisi}",
+            options=numeros_disponibles(),
+            index=0
+        )
+    with col2:
+        capitaine = st.checkbox("Capitaine", key=f"cap_{joueur_choisi}")
+    with col3:
+        premiere_ligne = st.selectbox(
+            "1ère ligne",
+            options=["", "G", "T", "D", "GD", "GTD"],
+            index=0 if pd.isna(ligne_joueur["1ere ligne"]) else 0
+        )
 
-            with col1:
-                numero = st.number_input(
-                    f"Numéro de {joueur}",
-                    min_value=1,
-                    max_value=23,
-                    value=i,
-                    key=f"num_{joueur}"
-                )
-            with col2:
-                capitaine = st.checkbox("Capitaine", key=f"cap_{joueur}")
-            with col3:
-                premiere_ligne = st.selectbox(
-                    "1ère ligne",
-                    options=["", "G", "T", "D", "GD", "GTD"],
-                    index=0 if pd.isna(ligne_joueur["1ere ligne"]) else 0,
-                    key=f"pl_{joueur}"
-                )
+    # Ajouter le joueur à la sélection
+    if st.button("✅ Ajouter le joueur"):
+        st.session_state.selection_joueurs.append({
+            "Nom": ligne_joueur["Nom"],
+            "Prénom": ligne_joueur["Prénom"],
+            "Club": ligne_joueur["Club"],
+            "Numéro": numero,
+            "Capitaine": "Oui" if capitaine else "Non",
+            "1ère ligne": premiere_ligne if premiere_ligne else ligne_joueur["1ere ligne"],
+            "Amical 2": ligne_joueur["Amical 2"]
+        })
+        st.experimental_rerun()  # rafraîchit l'app pour mettre à jour la liste
 
-            joueurs_config.append({
-                "Nom": ligne_joueur["Nom"],
-                "Prénom": ligne_joueur["Prénom"],
-                "Club": ligne_joueur["Club"],
-                "Numéro": numero,
-                "Capitaine": "Oui" if capitaine else "Non",
-                "1ère ligne": premiere_ligne if premiere_ligne else ligne_joueur["1ere ligne"],
-                "Amical 2": ligne_joueur["Amical 2"]
-            })
+# --- Affichage de la sélection ---
+if st.session_state.selection_joueurs:
+    selection_df = pd.DataFrame(st.session_state.selection_joueurs).sort_values("Numéro")
+    st.subheader("📋 Récapitulatif")
+    st.dataframe(selection_df, use_container_width=True)
 
-        # --- Résumé de la sélection ---
-        selection_df = pd.DataFrame(joueurs_config).sort_values("Numéro")
-        st.subheader("📋 Récapitulatif")
-        st.dataframe(selection_df, use_container_width=True)
+    # --- Vérification unicité des numéros ---
+    numeros = selection_df["Numéro"].tolist()
+    numeros_dupliques = [x for x in numeros if numeros.count(x) > 1]
 
-        # --- Vérification unicité des numéros ---
-        numeros = selection_df["Numéro"].tolist()
-        numeros_dupliques = [x for x in numeros if numeros.count(x) > 1]
+    if numeros_dupliques:
+        st.error(f"⚠️ Les numéros {sorted(set(numeros_dupliques))} sont attribués plusieurs fois.")
+        export_possible = False
+    else:
+        export_possible = True
 
-        if numeros_dupliques:
-            st.error(
-                f"⚠️ Attention : les numéros {sorted(set(numeros_dupliques))} "
-                f"sont attribués à plusieurs joueurs. Corrigez avant l'export."
-            )
-            export_possible = False
+    # --- Export Excel ---
+    if st.button("📥 Exporter la sélection"):
+        if export_possible:
+            selection_df.to_excel("joueurs_selectionnes.xlsx", index=False)
+            st.success("✅ Fichier exporté avec succès !")
         else:
-            export_possible = True
-
-        # --- Export Excel ---
-        if st.button("📥 Exporter la sélection"):
-            if export_possible:
-                selection_df.to_excel("joueurs_selectionnes.xlsx", index=False)
-                st.success("✅ Fichier 'joueurs_selectionnes.xlsx' exporté avec succès !")
-            else:
-                st.warning("❌ Export impossible tant que des numéros sont dupliqués.")
-
-except Exception as e:
-    st.error(f"Impossible de charger le fichier Excel distant : {e}")
+            st.warning("❌ Export impossible tant que des numéros sont dupliqués.")
