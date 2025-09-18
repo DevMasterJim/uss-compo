@@ -50,4 +50,49 @@ try:
                 )
             with col2:
                 capitaine = st.checkbox("Capitaine", key=f"cap_{joueur}")
-            with
+            with col3:
+                premiere_ligne = st.selectbox(
+                    "1ère ligne",
+                    options=["", "G", "T", "D", "GD", "GTD"],
+                    index=0 if pd.isna(ligne_joueur["1ere ligne"]) else 0,
+                    key=f"pl_{joueur}"
+                )
+
+            joueurs_config.append({
+                "Nom": ligne_joueur["Nom"],
+                "Prénom": ligne_joueur["Prénom"],
+                "Club": ligne_joueur["Club"],
+                "Numéro": numero,
+                "Capitaine": "Oui" if capitaine else "Non",
+                "1ère ligne": premiere_ligne if premiere_ligne else ligne_joueur["1ere ligne"],
+                "Amical 2": ligne_joueur["Amical 2"]
+            })
+
+        # --- Résumé de la sélection ---
+        selection_df = pd.DataFrame(joueurs_config).sort_values("Numéro")
+        st.subheader("📋 Récapitulatif")
+        st.dataframe(selection_df, use_container_width=True)
+
+        # --- Vérification unicité des numéros ---
+        numeros = selection_df["Numéro"].tolist()
+        numeros_dupliques = [x for x in numeros if numeros.count(x) > 1]
+
+        if numeros_dupliques:
+            st.error(
+                f"⚠️ Attention : les numéros {sorted(set(numeros_dupliques))} "
+                f"sont attribués à plusieurs joueurs. Corrigez avant l'export."
+            )
+            export_possible = False
+        else:
+            export_possible = True
+
+        # --- Export Excel ---
+        if st.button("📥 Exporter la sélection"):
+            if export_possible:
+                selection_df.to_excel("joueurs_selectionnes.xlsx", index=False)
+                st.success("✅ Fichier 'joueurs_selectionnes.xlsx' exporté avec succès !")
+            else:
+                st.warning("❌ Export impossible tant que des numéros sont dupliqués.")
+
+except Exception as e:
+    st.error(f"Impossible de charger le fichier Excel distant : {e}")
