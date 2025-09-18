@@ -9,7 +9,7 @@ st.title("🏉 Sélection de joueurs 🏉")
 url = "https://docs.google.com/spreadsheets/d/1y2eiaLo3xM8xWREgdTrVEuPlWKniDVql/edit?usp=sharing&ouid=115423419700090282464&rtpof=true&sd=true"
 
 try:
-    df = pd.read_excel(url)
+    df = pd.read_excel(url, engine="openpyxl")
 
     # On ne garde que les colonnes utiles
     colonnes_utiles = ["Nom", "Prénom", "Club", "1ere ligne", "Amical 2"]
