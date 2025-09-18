@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 
 st.set_page_config(page_title="Sélection de joueurs", layout="wide")
-st.title("🏉 Sélection de joueurs")
+st.title("🏉 Sélection de joueurs 🏉")
 
 # --- URL directe Google Drive ---
 url = "https://drive.google.com/uc?export=download&id=1y2eiaLo3xM8xWREgdTrVEuPlWKniDVql"
