@@ -6,7 +6,7 @@ st.title("🏉 Sélection de joueurs 🏉")
 
 # --- URL du fichier Excel Google Drive ---
 # ⚠️ Remplacer TON_ID_DE_FICHIER par l'ID réel du fichier Google Drive
-url = "https://docs.google.com/spreadsheets/d/1y2eiaLo3xM8xWREgdTrVEuPlWKniDVql/edit?usp=drive_link&ouid=115423419700090282464&rtpof=true&sd=true"
+url = "https://docs.google.com/spreadsheets/d/1y2eiaLo3xM8xWREgdTrVEuPlWKniDVql/edit?usp=sharing&ouid=115423419700090282464&rtpof=true&sd=true"
 
 try:
     df = pd.read_excel(url)
