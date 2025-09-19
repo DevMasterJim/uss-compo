@@ -43,6 +43,24 @@ if "attrib" not in st.session_state:
         df[f"1ère ligne {niveau}"] = ""   # vide par défaut
     st.session_state.attrib = df.copy()
 
+# --- Déterminer les numéros déjà attribués ---
+attrib = st.session_state.attrib
+
+for niveau in ["National", "Régional"]:
+    deja_pris = set(attrib[f"Numéro {niveau}"].dropna().tolist())
+    options_numeros = [n for n in range(1, 24) if n not in deja_pris]
+
+    # si un joueur a déjà un numéro, on l’ajoute dans la liste pour qu’il reste sélectionné
+    for num in attrib[f"Numéro {niveau}"].dropna().unique():
+        if num not in options_numeros:
+            options_numeros.append(num)
+
+    # mise à jour dynamique des options dans column_config
+    if niveau == "National":
+        num_col_nat = st.column_config.SelectboxColumn(options=sorted(options_numeros), required=False)
+    else:
+        num_col_reg = st.column_config.SelectboxColumn(options=sorted(options_numeros), required=False)
+
 # --- Tableau éditable ---
 edited = st.data_editor(
     st.session_state.attrib,
@@ -51,10 +69,10 @@ edited = st.data_editor(
     hide_index=True,
     height=700,
     column_config={
-        "Numéro National": st.column_config.SelectboxColumn(options=list(range(1, 24)), required=False),
+        "Numéro National": num_col_nat,
         "Capitaine National": st.column_config.CheckboxColumn(),
         "1ère ligne National": st.column_config.SelectboxColumn(options=["", "G", "D", "T", "GD", "GDT"], required=False),
-        "Numéro Régional": st.column_config.SelectboxColumn(options=list(range(1, 24)), required=False),
+        "Numéro Régional": num_col_reg,
         "Capitaine Régional": st.column_config.CheckboxColumn(),
         "1ère ligne Régional": st.column_config.SelectboxColumn(options=["", "G", "D", "T", "GD", "GDT"], required=False),
     }
