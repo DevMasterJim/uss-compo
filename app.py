@@ -41,41 +41,6 @@ if "attrib" not in st.session_state:
         df[f"1ère ligne {niveau}"] = ""  # vide par défaut
     st.session_state.attrib = df.copy()
 
-# --- Style pour capitaines : nom et numéro ---
-def style_capitaine(row):
-    styles = []
-    for niveau in ["National", "Régional"]:
-        if row[f"Capitaine {niveau}"]:
-            # Numéro et Capitaine en vert gras
-            styles.append("font-weight: bold; color: darkgreen;")  # Numéro
-            styles.append("font-weight: bold; color: darkgreen;")  # Capitaine
-        else:
-            styles.append("")  # Numéro
-            styles.append("")  # Capitaine
-    # Colonnes Nom, Prénom neutres
-    style_full = ["", ""]  # Nom, Prénom
-    style_full += [styles[0]]  # Numéro National
-    style_full += [styles[1]]  # Capitaine National
-    style_full += [""]  # 1ère ligne National
-    style_full += [styles[2]]  # Numéro Régional
-    style_full += [styles[3]]  # Capitaine Régional
-    style_full += [""]  # 1ère ligne Régional
-    return style_full
-
-# --- Vue récapitulative non éditable ---
-st.subheader("📋 Aperçu des joueurs et affectations")
-display_cols = ["Nom", "Prénom",
-                "Numéro National", "Capitaine National", "1ère ligne National",
-                "Numéro Régional", "Capitaine Régional", "1ère ligne Régional"]
-
-st.dataframe(
-    st.session_state.attrib[display_cols].sort_values("Nom").style.apply(style_capitaine, axis=1),
-    use_container_width=True,
-    height=300
-)
-
-st.markdown("---")
-
 # --- Fonction pour éditer un niveau avec keys uniques ---
 def edit_niveau(niveau):
     st.subheader(f"✏️ Attribution {niveau}")
@@ -114,6 +79,50 @@ def edit_niveau(niveau):
 edit_niveau("National")
 st.markdown("---")
 edit_niveau("Régional")
+
+# --- Aperçu vertical en deux colonnes ---
+st.subheader("📋 Aperçu des joueurs sélectionnés")
+col_n, col_r = st.columns(2)
+
+with col_n:
+    st.markdown("### National")
+    df_national = st.session_state.attrib[st.session_state.attrib["Numéro National"].notna()].copy()
+    
+    def style_n(row):
+        style_full = []
+        if row["Capitaine National"]:
+            style_full += ["font-weight: bold; color: darkgreen;", "font-weight: bold; color: darkgreen;"]  # Numéro, Capitaine
+        else:
+            style_full += ["", ""]
+        style_full += ["", "", ""]  # Nom, Prénom, 1ère ligne
+        return style_full
+    
+    cols_display = ["Numéro National", "Nom", "Prénom", "1ère ligne National", "Capitaine National"]
+    st.dataframe(
+        df_national[cols_display].sort_values("Numéro National").style.apply(style_n, axis=1),
+        use_container_width=True,
+        height=300
+    )
+
+with col_r:
+    st.markdown("### Régional")
+    df_regional = st.session_state.attrib[st.session_state.attrib["Numéro Régional"].notna()].copy()
+    
+    def style_r(row):
+        style_full = []
+        if row["Capitaine Régional"]:
+            style_full += ["font-weight: bold; color: darkgreen;", "font-weight: bold; color: darkgreen;"]  # Numéro, Capitaine
+        else:
+            style_full += ["", ""]
+        style_full += ["", "", ""]  # Nom, Prénom, 1ère ligne
+        return style_full
+    
+    cols_display = ["Numéro Régional", "Nom", "Prénom", "1ère ligne Régional", "Capitaine Régional"]
+    st.dataframe(
+        df_regional[cols_display].sort_values("Numéro Régional").style.apply(style_r, axis=1),
+        use_container_width=True,
+        height=300
+    )
 
 # --- Export Excel ---
 def export_excel(df, niveau):
