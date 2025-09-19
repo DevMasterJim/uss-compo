@@ -76,7 +76,7 @@ st.dataframe(
 
 st.markdown("---")
 
-# --- Fonction pour éditer un niveau ---
+# --- Fonction pour éditer un niveau avec keys uniques ---
 def edit_niveau(niveau):
     st.subheader(f"✏️ Attribution {niveau}")
     attrib = st.session_state.attrib
@@ -91,18 +91,21 @@ def edit_niveau(niveau):
             attrib.at[idx, f"Numéro {niveau}"] = st.selectbox(
                 f"{row['Nom']} - Numéro {niveau}",
                 options=options_num,
-                index=0 if pd.isna(row[f"Numéro {niveau}"]) else options_num.index(row[f"Numéro {niveau}"])
+                index=0 if pd.isna(row[f"Numéro {niveau}"]) else options_num.index(row[f"Numéro {niveau}"]),
+                key=f"num_{niveau}_{idx}"
             )
         with col2:
             attrib.at[idx, f"Capitaine {niveau}"] = st.checkbox(
                 "Capitaine",
-                value=row[f"Capitaine {niveau}"]
+                value=row[f"Capitaine {niveau}"],
+                key=f"cap_{niveau}_{idx}"
             )
         with col3:
             attrib.at[idx, f"1ère ligne {niveau}"] = st.selectbox(
                 "1ère ligne",
                 options=["", "G", "D", "T", "GD", "GDT"],
-                index=0 if row[f"1ère ligne {niveau}"] == "" else ["", "G", "D", "T", "GD", "GDT"].index(row[f"1ère ligne {niveau}"])
+                index=0 if row[f"1ère ligne {niveau}"] == "" else ["", "G", "D", "T", "GD", "GDT"].index(row[f"1ère ligne {niveau}"]),
+                key=f"ligne_{niveau}_{idx}"
             )
 
     st.session_state.attrib = attrib
