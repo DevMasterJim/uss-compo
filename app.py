@@ -11,12 +11,12 @@ url = "https://drive.google.com/uc?export=download&id=1y2eiaLo3xM8xWREgdTrVEuPlW
 df = pd.read_excel(url, engine="openpyxl")
 
 # Colonnes utiles
-colonnes_utiles = ["Nom", "Prénom", "Club", "1ere ligne", "Amical 2"]
+colonnes_utiles = ["Présence","Prénom","Nom","Club", "1ere ligne"]
 df = df[colonnes_utiles]
 
-# Transformation Amical 2
-mapping_amical = {"A": "❌", "P": "✅", "C": "❓"}
-df["Amical 2"] = df["Amical 2"].map(mapping_amical).fillna("")
+# Transformation Présence
+mapping_presence = {"A": "❌", "P": "✅", "C": "❔"}
+df["Présence"] = df["Présence"].map(mapping_presence).fillna("")
 
 st.subheader("Aperçu du fichier (colonnes filtrées)")
 st.dataframe(df, use_container_width=True)
