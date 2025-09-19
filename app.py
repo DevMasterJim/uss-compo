@@ -3,8 +3,8 @@ import pandas as pd
 from io import BytesIO
 from streamlit_autorefresh import st_autorefresh
 
-# --- Auto-refresh toutes les 10 secondes ---
-count = st_autorefresh(interval=10000, limit=None, key="autorefresh")  # intervalle en ms
+# --- Auto-refresh toutes les 30 secondes ---
+count = st_autorefresh(interval=30000, limit=None, key="autorefresh")  # intervalle en ms
 
 st.set_page_config(page_title="Attribution National / Régional", layout="wide")
 st.title("🏉 Composition National & Régional 🏉")
