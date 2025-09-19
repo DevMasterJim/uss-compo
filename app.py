@@ -37,7 +37,7 @@ df = df.reset_index(drop=True)
 for niveau in ["National", "Régional"]:
     df[f"Numéro {niveau}"] = None
     df[f"Capitaine {niveau}"] = False
-    df[f"1ère ligne {niveau}"] = None
+    df[f"1ère ligne {niveau}"] = ""  # vide par défaut
 
 # --- Initialiser la session ---
 if "attrib" not in st.session_state:
@@ -46,15 +46,18 @@ if "attrib" not in st.session_state:
 # --- Interface édition ---
 st.subheader("📝 Attribution des numéros et rôles")
 
+options_ligne = ["", "G", "D", "T", "GD", "GDT"]
+
 # Fonction pour générer les options de numéros disponibles
 def get_num_options(attrib, niveau, current_value):
     nums_pris = attrib[f"Numéro {niveau}"].dropna().tolist()
     options = [n for n in range(1, 24) if n not in nums_pris or n == current_value]
     return options
 
-edited_rows = []
 attrib = st.session_state.attrib.copy()
 
+# --- Édition National ---
+edited_rows = []
 for idx, row in attrib.iterrows():
     col1, col2, col3 = st.columns([1, 1, 2])
     
@@ -73,17 +76,19 @@ for idx, row in attrib.iterrows():
             key=f"cap_National_{idx}"
         )
     with col3:
+        val_ligne = str(row["1ère ligne National"])
+        index_ligne = options_ligne.index(val_ligne) if val_ligne in options_ligne else 0
         row["1ère ligne National"] = st.selectbox(
             "1ère ligne",
-            options=["", "G", "D", "T", "GD", "GDT"],
-            index=0 if row["1ère ligne National"] == "" else ["", "X", "G", "D", "T", "GD", "GDT"].index(row["1ère ligne National"]),
+            options=options_ligne,
+            index=index_ligne,
             key=f"ligne_National_{idx}"
         )
     edited_rows.append(row)
 
 attrib = pd.DataFrame(edited_rows)
 
-# Même chose pour Régional
+# --- Édition Régional ---
 edited_rows = []
 for idx, row in attrib.iterrows():
     col1, col2, col3 = st.columns([1, 1, 2])
@@ -103,19 +108,20 @@ for idx, row in attrib.iterrows():
             key=f"cap_Régional_{idx}"
         )
     with col3:
+        val_ligne = str(row["1ère ligne Régional"])
+        index_ligne = options_ligne.index(val_ligne) if val_ligne in options_ligne else 0
         row["1ère ligne Régional"] = st.selectbox(
             "1ère ligne",
-            options=["", "G", "D", "T", "GD", "GDT"],
-            index=0 if row["1ère ligne Régional"] == "" else ["", "X", "G", "D", "T", "GD", "GDT"].index(row["1ère ligne Régional"]),
+            options=options_ligne,
+            index=index_ligne,
             key=f"ligne_Régional_{idx}"
         )
     edited_rows.append(row)
 
 attrib = pd.DataFrame(edited_rows)
-
 st.session_state.attrib = attrib
 
-# --- Aperçu récapitulatif vertical ---
+# --- Aperçu vertical ---
 st.subheader("📋 Aperçu des joueurs sélectionnés")
 col_n, col_r = st.columns(2)
 
