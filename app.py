@@ -31,7 +31,6 @@ df["Présence"] = df["Présence"].map(mapping_presence).fillna("")
 # --- Filtrer les lignes valides ---
 df = df[(df["Nom"].notna()) & (df["Nom"] != "") &
         (df["Présence"].notna()) & (df["Présence"] != "")].copy()
-
 df = df.reset_index(drop=True)
 
 # --- Initialiser la session une seule fois ---
@@ -42,7 +41,42 @@ if "attrib" not in st.session_state:
         df[f"1ère ligne {niveau}"] = ""  # vide par défaut
     st.session_state.attrib = df.copy()
 
-# --- Fonction pour afficher la table d’édition par ligne ---
+# --- Style pour capitaines : nom et numéro ---
+def style_capitaine(row):
+    styles = []
+    for niveau in ["National", "Régional"]:
+        if row[f"Capitaine {niveau}"]:
+            # Numéro et Capitaine en vert gras
+            styles.append("font-weight: bold; color: darkgreen;")  # Numéro
+            styles.append("font-weight: bold; color: darkgreen;")  # Capitaine
+        else:
+            styles.append("")  # Numéro
+            styles.append("")  # Capitaine
+    # Colonnes Nom, Prénom neutres
+    style_full = ["", ""]  # Nom, Prénom
+    style_full += [styles[0]]  # Numéro National
+    style_full += [styles[1]]  # Capitaine National
+    style_full += [""]  # 1ère ligne National
+    style_full += [styles[2]]  # Numéro Régional
+    style_full += [styles[3]]  # Capitaine Régional
+    style_full += [""]  # 1ère ligne Régional
+    return style_full
+
+# --- Vue récapitulative non éditable ---
+st.subheader("📋 Aperçu des joueurs et affectations")
+display_cols = ["Nom", "Prénom",
+                "Numéro National", "Capitaine National", "1ère ligne National",
+                "Numéro Régional", "Capitaine Régional", "1ère ligne Régional"]
+
+st.dataframe(
+    st.session_state.attrib[display_cols].sort_values("Nom").style.apply(style_capitaine, axis=1),
+    use_container_width=True,
+    height=300
+)
+
+st.markdown("---")
+
+# --- Fonction pour éditer un niveau ---
 def edit_niveau(niveau):
     st.subheader(f"✏️ Attribution {niveau}")
     attrib = st.session_state.attrib
