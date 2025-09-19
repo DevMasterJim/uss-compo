@@ -1,93 +1,84 @@
 import streamlit as st
 import pandas as pd
+from io import BytesIO
 
-st.set_page_config(page_title="Sélection de joueurs", layout="wide")
-st.title("🏉 Sélection de joueurs 🏉")
+st.set_page_config(page_title="Attribution National / Régional", layout="wide")
+st.title("🏉 Attribution National & Régional 🏉")
 
 # --- URL directe Google Drive ---
 url = "https://drive.google.com/uc?export=download&id=1y2eiaLo3xM8xWREgdTrVEuPlWKniDVql"
 
-# --- Télécharger le fichier Excel ---
-df = pd.read_excel(url, engine="openpyxl")
+# --- Charger le fichier Excel ---
+try:
+    df = pd.read_excel(url, engine="openpyxl")
+except Exception as e:
+    st.error(f"Impossible de charger le fichier Excel distant : {e}")
+    st.stop()
 
-# Colonnes utiles
-colonnes_utiles = ["Présence","Prénom","Nom","Club", "1ere ligne"]
-df = df[colonnes_utiles]
+# --- Colonnes utiles extraites ---
+colonnes_utiles = ["Présence", "Prénom", "Nom", "Club", "1ere ligne"]
+missing = [c for c in colonnes_utiles if c not in df.columns]
+if missing:
+    st.error(f"Colonnes manquantes dans le fichier Excel : {missing}")
+    st.stop()
+
+df = df[colonnes_utiles].copy()
 
 # Transformation Présence
-mapping_presence = {"A": "❌", "P": "✅", "C": "❔"}
+mapping_presence = {"A": "❌", "P": "✅", "C": "❓"}
 df["Présence"] = df["Présence"].map(mapping_presence).fillna("")
 
-st.subheader("Aperçu du fichier (colonnes filtrées)")
-st.dataframe(df, use_container_width=True)
+# --- Ajouter colonnes pour National et Régional ---
+for niveau in ["National", "Régional"]:
+    df[f"Numéro {niveau}"] = None
+    df[f"Capitaine {niveau}"] = False
+    df[f"1ère ligne {niveau}"] = "X"
 
-# --- Initialisation de la session pour stocker les joueurs sélectionnés ---
-if "selection_joueurs" not in st.session_state:
-    st.session_state.selection_joueurs = []
+# --- Initialiser la mémoire ---
+if "attrib" not in st.session_state:
+    st.session_state.attrib = df.copy()
 
-# --- Liste des numéros disponibles ---
-def numeros_disponibles():
-    attribues = [j["Numéro"] for j in st.session_state.selection_joueurs]
-    return [n for n in range(1, 24) if n not in attribues]
+# --- Interface édition ---
+st.subheader("📝 Attribution des numéros et rôles")
+edited = st.data_editor(
+    st.session_state.attrib,
+    num_rows="dynamic",
+    use_container_width=True,
+    hide_index=True,
+    column_config={
+        "Numéro National": st.column_config.SelectboxColumn(options=list(range(1, 24)), required=False),
+        "Capitaine National": st.column_config.CheckboxColumn(),
+        "1ère ligne National": st.column_config.SelectboxColumn(options=["X", "G", "D", "T", "GD", "GDT"]),
+        "Numéro Régional": st.column_config.SelectboxColumn(options=list(range(1, 24)), required=False),
+        "Capitaine Régional": st.column_config.CheckboxColumn(),
+        "1ère ligne Régional": st.column_config.SelectboxColumn(options=["X", "G", "D", "T", "GD", "GDT"]),
+    }
+)
 
-# --- Sélection des joueurs ---
-# On ne montre que les joueurs non encore choisis
-joueurs_disponibles = [j for j in df["Nom"].tolist() if j not in [s["Nom"] for s in st.session_state.selection_joueurs]]
+# Sauvegarder dans la session
+st.session_state.attrib = edited
 
-joueur_choisi = st.selectbox("Choisir un joueur :", options=joueurs_disponibles)
+# --- Export Excel ---
+def export_excel(df, niveau):
+    """Filtre et exporte les colonnes pour un niveau donné"""
+    subset = df[["Nom", "Prénom", "Club", "Présence", f"Numéro {niveau}", f"Capitaine {niveau}", f"1ère ligne {niveau}"]]
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        subset.to_excel(writer, index=False, sheet_name=niveau)
+    return output.getvalue()
 
-if joueur_choisi:
-    ligne_joueur = df[df["Nom"] == joueur_choisi].iloc[0]
-
-    col1, col2, col3 = st.columns([1, 1, 2])
-    with col1:
-        numero = st.selectbox(
-            f"Numéro de {joueur_choisi}",
-            options=numeros_disponibles(),
-            index=0
-        )
-    with col2:
-        capitaine = st.checkbox("Capitaine", key=f"cap_{joueur_choisi}")
-    with col3:
-        premiere_ligne = st.selectbox(
-            "1ère ligne",
-            options=["", "G", "T", "D", "GD", "GTD"],
-            index=0 if pd.isna(ligne_joueur["1ere ligne"]) else 0
-        )
-
-    # Ajouter le joueur à la sélection
-    if st.button("✅ Ajouter le joueur"):
-        st.session_state.selection_joueurs.append({
-            "Nom": ligne_joueur["Nom"],
-            "Prénom": ligne_joueur["Prénom"],
-            "Club": ligne_joueur["Club"],
-            "Numéro": numero,
-            "Capitaine": "Oui" if capitaine else "Non",
-            "1ère ligne": premiere_ligne if premiere_ligne else ligne_joueur["1ere ligne"],
-            "Amical 2": ligne_joueur["Amical 2"]
-        })
-        st.experimental_rerun()  # rafraîchit l'app pour mettre à jour la liste
-
-# --- Affichage de la sélection ---
-if st.session_state.selection_joueurs:
-    selection_df = pd.DataFrame(st.session_state.selection_joueurs).sort_values("Numéro")
-    st.subheader("📋 Récapitulatif")
-    st.dataframe(selection_df, use_container_width=True)
-
-    # --- Vérification unicité des numéros ---
-    numeros = selection_df["Numéro"].tolist()
-    numeros_dupliques = [x for x in numeros if numeros.count(x) > 1]
-
-    if numeros_dupliques:
-        st.error(f"⚠️ Les numéros {sorted(set(numeros_dupliques))} sont attribués plusieurs fois.")
-        export_possible = False
-    else:
-        export_possible = True
-
-    # --- Export Excel ---
-    if st.button("📥 Exporter la sélection"):
-        if export_possible:
-            selection_df.to_excel("joueurs_selectionnes.xlsx", index=False)
-            st.success("✅ Fichier exporté avec succès !")
-        else:
-            st.warning("❌ Export impossible tant que des numéros sont dupliqués.")
+col1, col2 = st.columns(2)
+with col1:
+    st.download_button(
+        "📥 Exporter National",
+        data=export_excel(st.session_state.attrib, "National"),
+        file_name="selection_nationale.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+with col2:
+    st.download_button(
+        "📥 Exporter Régional",
+        data=export_excel(st.session_state.attrib, "Régional"),
+        file_name="selection_regionale.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
