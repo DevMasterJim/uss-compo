@@ -76,7 +76,7 @@ for idx, row in attrib.iterrows():
         row["1ère ligne National"] = st.selectbox(
             "1ère ligne",
             options=["", "G", "D", "T", "GD", "GDT"],
-            index=0 if row["1ère ligne National"] == "" else ["", "G", "D", "T", "GD", "GDT"].index(row["1ère ligne National"]),
+            index=0 if row["1ère ligne National"] == "" else ["", "X", "G", "D", "T", "GD", "GDT"].index(row["1ère ligne National"]),
             key=f"ligne_National_{idx}"
         )
     edited_rows.append(row)
@@ -106,7 +106,7 @@ for idx, row in attrib.iterrows():
         row["1ère ligne Régional"] = st.selectbox(
             "1ère ligne",
             options=["", "G", "D", "T", "GD", "GDT"],
-            index=0 if row["1ère ligne Régional"] == "" else ["", "G", "D", "T", "GD", "GDT"].index(row["1ère ligne Régional"]),
+            index=0 if row["1ère ligne Régional"] == "" else ["", "X", "G", "D", "T", "GD", "GDT"].index(row["1ère ligne Régional"]),
             key=f"ligne_Régional_{idx}"
         )
     edited_rows.append(row)
