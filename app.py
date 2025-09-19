@@ -65,8 +65,8 @@ st.session_state.attrib = edited
 
 # --- Export Excel ---
 def export_excel(df, niveau):
-    subset = df[["Nom", "Prénom", "Club", "Présence",
-                 f"Numéro {niveau}", f"Capitaine {niveau}", f"1ère ligne {niveau}"]]
+    subset = df[[f"Numéro {niveau}", "Nom", "Prénom",
+                 f"1ère ligne {niveau}", f"Capitaine {niveau}"]]
     output = BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
         subset.to_excel(writer, index=False, sheet_name=niveau)
