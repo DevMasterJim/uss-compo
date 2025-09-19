@@ -40,7 +40,7 @@ if "attrib" not in st.session_state:
     for niveau in ["National", "Régional"]:
         df[f"Numéro {niveau}"] = None
         df[f"Capitaine {niveau}"] = False
-        df[f"1ère ligne {niveau}"] = ""   # vide par défaut
+        df[f"1ère ligne {niveau}"] = None
     st.session_state.attrib = df.copy()
 
 # --- Déterminer les numéros déjà attribués ---
