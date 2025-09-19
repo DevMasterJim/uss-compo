@@ -39,7 +39,7 @@ for niveau in ["National", "Régional"]:
     df[f"Capitaine {niveau}"] = False
     df[f"1ère ligne {niveau}"] = ""  # vide par défaut
 
-# --- Initialiser session ---
+# --- Initialiser session uniquement si pas déjà fait ---
 if "attrib" not in st.session_state:
     st.session_state.attrib = df.copy()
 
@@ -49,7 +49,7 @@ edited = st.data_editor(
     st.session_state.attrib,
     num_rows="dynamic",
     use_container_width=True,
-    hide_index=True,
+    hide_index=True,   # cache l’index
     height=700,
     column_config={
         "Numéro National": st.column_config.SelectboxColumn(options=list(range(1, 24)), required=False),
@@ -61,11 +61,17 @@ edited = st.data_editor(
     }
 )
 
+# --- Sauvegarder les modifications dans la session ---
 st.session_state.attrib = edited
 
 # --- Export Excel ---
 def export_excel(df, niveau):
-    subset = df[["Nom", "Prénom", "Club", "Présence", f"Numéro {niveau}", f"Capitaine {niveau}", f"1ère ligne {niveau}"]]
+    subset = df[["Nom", "Prénom", "Club", f"Numéro {niveau}", f"Capitaine {niveau}", f"1ère ligne {niveau}"]]
+    subset = subset.rename(columns={
+        f"Numéro {niveau}": "Numéro",
+        f"1ère ligne {niveau}": "1ère ligne",
+        f"Capitaine {niveau}": "Capitaine"
+    })
     output = BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
         subset.to_excel(writer, index=False, sheet_name=niveau)
