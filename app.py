@@ -61,8 +61,6 @@ edited = st.data_editor(
         "1ère ligne Régional": st.column_config.SelectboxColumn(options=["", "G", "D", "T", "GD", "GDT"], required=False),
     }
 )
-,
-)
 
 st.session_state.attrib = edited
 
