@@ -62,7 +62,6 @@ edited = st.data_editor(
     }
 )
 ,
-    }
 )
 
 st.session_state.attrib = edited
