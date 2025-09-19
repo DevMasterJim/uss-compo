@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 
-st.set_page_config(page_title="Attribution National / Régional", layout="wide")
+st.set_page_config(page_title="Composition National & Régional", layout="wide")
 st.title("🏉 Composition National & Régional 🏉")
 
 # --- URL directe Google Drive ---
@@ -25,66 +25,67 @@ if missing:
 df = df[colonnes_utiles].copy()
 
 # Transformation Présence
-mapping_presence = {"A": "❌", "P": "✅", "C": "❔"}
+mapping_presence = {"A": "❌", "P": "✅", "C": "❓"}
 df["Présence"] = df["Présence"].map(mapping_presence).fillna("")
 
-# --- Ne garder que les lignes valides (Nom et Présence non vides) ---
+# --- Filtrer les lignes valides ---
 df = df[(df["Nom"].notna()) & (df["Nom"] != "") &
         (df["Présence"].notna()) & (df["Présence"] != "")].copy()
 
-# --- Réinitialiser l’index pour supprimer la colonne inutile ---
 df = df.reset_index(drop=True)
 
-# --- Initialiser session seulement au premier passage ---
+# --- Initialiser la session une seule fois ---
 if "attrib" not in st.session_state:
     for niveau in ["National", "Régional"]:
         df[f"Numéro {niveau}"] = None
         df[f"Capitaine {niveau}"] = False
-        df[f"1ère ligne {niveau}"] = None
+        df[f"1ère ligne {niveau}"] = ""  # vide par défaut
     st.session_state.attrib = df.copy()
 
-# --- Déterminer les numéros déjà attribués ---
-attrib = st.session_state.attrib
+# --- Fonction pour afficher la table d’édition par ligne ---
+def edit_niveau(niveau):
+    st.subheader(f"✏️ Attribution {niveau}")
+    attrib = st.session_state.attrib
+    for idx, row in attrib.iterrows():
+        col1, col2, col3 = st.columns([1, 1, 2])
 
-for niveau in ["National", "Régional"]:
-    deja_pris = set(attrib[f"Numéro {niveau}"].dropna().tolist())
-    options_numeros = [n for n in range(1, 24) if n not in deja_pris]
+        # --- Numéro disponible pour ce niveau ---
+        numeros_pris = attrib[f"Numéro {niveau}"].dropna().tolist()
+        options_num = [n for n in range(1, 24) if n not in numeros_pris or n == row[f"Numéro {niveau}"]]
 
-    # si un joueur a déjà un numéro, on l’ajoute dans la liste pour qu’il reste sélectionné
-    for num in attrib[f"Numéro {niveau}"].dropna().unique():
-        if num not in options_numeros:
-            options_numeros.append(num)
+        with col1:
+            attrib.at[idx, f"Numéro {niveau}"] = st.selectbox(
+                f"{row['Nom']} - Numéro {niveau}",
+                options=options_num,
+                index=0 if pd.isna(row[f"Numéro {niveau}"]) else options_num.index(row[f"Numéro {niveau}"])
+            )
+        with col2:
+            attrib.at[idx, f"Capitaine {niveau}"] = st.checkbox(
+                "Capitaine",
+                value=row[f"Capitaine {niveau}"]
+            )
+        with col3:
+            attrib.at[idx, f"1ère ligne {niveau}"] = st.selectbox(
+                "1ère ligne",
+                options=["", "G", "D", "T", "GD", "GDT"],
+                index=0 if row[f"1ère ligne {niveau}"] == "" else ["", "G", "D", "T", "GD", "GDT"].index(row[f"1ère ligne {niveau}"])
+            )
 
-    # mise à jour dynamique des options dans column_config
-    if niveau == "National":
-        num_col_nat = st.column_config.SelectboxColumn(options=sorted(options_numeros), required=False)
-    else:
-        num_col_reg = st.column_config.SelectboxColumn(options=sorted(options_numeros), required=False)
+    st.session_state.attrib = attrib
 
-# --- Tableau éditable ---
-edited = st.data_editor(
-    st.session_state.attrib,
-    num_rows="dynamic",
-    use_container_width=True,
-    hide_index=True,
-    height=700,
-    column_config={
-        "Numéro National": num_col_nat,
-        "Capitaine National": st.column_config.CheckboxColumn(),
-        "1ère ligne National": st.column_config.SelectboxColumn(options=["", "G", "D", "T", "GD", "GDT"], required=False),
-        "Numéro Régional": num_col_reg,
-        "Capitaine Régional": st.column_config.CheckboxColumn(),
-        "1ère ligne Régional": st.column_config.SelectboxColumn(options=["", "G", "D", "T", "GD", "GDT"], required=False),
-    }
-)
-
-# --- Sauvegarder la modification ---
-st.session_state.attrib = edited
+# --- Édition pour les deux niveaux ---
+edit_niveau("National")
+st.markdown("---")
+edit_niveau("Régional")
 
 # --- Export Excel ---
 def export_excel(df, niveau):
-    subset = df[[f"Numéro {niveau}", "Nom", "Prénom",
-                 f"1ère ligne {niveau}", f"Capitaine {niveau}"]]
+    subset = df[[f"Numéro {niveau}", "Nom", "Prénom", f"1ère ligne {niveau}", f"Capitaine {niveau}"]]
+    subset = subset.rename(columns={
+        f"Numéro {niveau}": "Numéro",
+        f"1ère ligne {niveau}": "1ère ligne",
+        f"Capitaine {niveau}": "Capitaine"
+    })
     output = BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
         subset.to_excel(writer, index=False, sheet_name=niveau)
