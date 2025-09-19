@@ -3,7 +3,7 @@ import pandas as pd
 from io import BytesIO
 
 st.set_page_config(page_title="Attribution National / Régional", layout="wide")
-st.title("🏉 Attribution National & Régional 🏉")
+st.title("🏉 Composition National & Régional 🏉")
 
 # --- URL directe Google Drive ---
 url = "https://drive.google.com/uc?export=download&id=1y2eiaLo3xM8xWREgdTrVEuPlWKniDVql"
@@ -39,27 +39,29 @@ df = df.reset_index(drop=True)
 for niveau in ["National", "Régional"]:
     df[f"Numéro {niveau}"] = None
     df[f"Capitaine {niveau}"] = False
-    df[f"1ère ligne {niveau}"] = ""  # valeur par défaut vide
+    df[f"1ère ligne {niveau}"] = None
 
 # --- Initialiser session ---
 if "attrib" not in st.session_state:
     st.session_state.attrib = df.copy()
 
 # --- Tableau éditable ---
-st.subheader("📝 Attribution des numéros et rôles")
 edited = st.data_editor(
     st.session_state.attrib,
     num_rows="dynamic",
     use_container_width=True,
-    hide_index=True,          # cache l’index
-    height=700,               # plus grande fenêtre de visualisation
+    hide_index=True,
+    height=700,
     column_config={
         "Numéro National": st.column_config.SelectboxColumn(options=list(range(1, 24)), required=False),
         "Capitaine National": st.column_config.CheckboxColumn(),
-        "1ère ligne National": st.column_config.SelectboxColumn(options=["", "G", "D", "T", "GD", "GDT"]),
+        "1ère ligne National": st.column_config.SelectboxColumn(options=["", "G", "D", "T", "GD", "GDT"], required=False),
         "Numéro Régional": st.column_config.SelectboxColumn(options=list(range(1, 24)), required=False),
         "Capitaine Régional": st.column_config.CheckboxColumn(),
-        "1ère ligne Régional": st.column_config.SelectboxColumn(options=["", "G", "D", "T", "GD", "GDT"]),
+        "1ère ligne Régional": st.column_config.SelectboxColumn(options=["", "G", "D", "T", "GD", "GDT"], required=False),
+    }
+)
+,
     }
 )
 
