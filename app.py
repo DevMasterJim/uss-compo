@@ -35,14 +35,12 @@ df = df[(df["Nom"].notna()) & (df["Nom"] != "") &
 # --- Réinitialiser l’index pour supprimer la colonne inutile ---
 df = df.reset_index(drop=True)
 
-# --- Colonnes pour National et Régional ---
-for niveau in ["National", "Régional"]:
-    df[f"Numéro {niveau}"] = None
-    df[f"Capitaine {niveau}"] = False
-    df[f"1ère ligne {niveau}"] = None
-
-# --- Initialiser session ---
+# --- Initialiser session seulement au premier passage ---
 if "attrib" not in st.session_state:
+    for niveau in ["National", "Régional"]:
+        df[f"Numéro {niveau}"] = None
+        df[f"Capitaine {niveau}"] = False
+        df[f"1ère ligne {niveau}"] = ""   # vide par défaut
     st.session_state.attrib = df.copy()
 
 # --- Tableau éditable ---
@@ -62,8 +60,30 @@ edited = st.data_editor(
     }
 )
 
+# --- Sauvegarder la modification ---
 st.session_state.attrib = edited
 
 # --- Export Excel ---
 def export_excel(df, niveau):
-    subset = df[["Nom", "Prénom", "Club",]()]()
+    subset = df[["Nom", "Prénom", "Club", "Présence",
+                 f"Numéro {niveau}", f"Capitaine {niveau}", f"1ère ligne {niveau}"]]
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        subset.to_excel(writer, index=False, sheet_name=niveau)
+    return output.getvalue()
+
+col1, col2 = st.columns(2)
+with col1:
+    st.download_button(
+        "📥 Exporter National",
+        data=export_excel(st.session_state.attrib, "National"),
+        file_name="selection_nationale.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+with col2:
+    st.download_button(
+        "📥 Exporter Régional",
+        data=export_excel(st.session_state.attrib, "Régional"),
+        file_name="selection_regionale.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
