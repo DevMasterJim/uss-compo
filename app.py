@@ -3,8 +3,8 @@ import pandas as pd
 from io import BytesIO
 from streamlit_autorefresh import st_autorefresh
 
-# --- Auto-refresh toutes les 30 secondes ---
-count = st_autorefresh(interval=30000, limit=None, key="autorefresh")  # intervalle en ms
+# --- Auto-refresh toutes les 10 secondes ---
+count = st_autorefresh(interval=10000, limit=None, key="autorefresh")  # intervalle en ms
 
 st.set_page_config(page_title="Attribution National / Régional", layout="wide")
 st.title("🏉 Composition National & Régional 🏉")
@@ -48,22 +48,30 @@ if "attrib" not in st.session_state:
     st.session_state.attrib = df.copy()
 
 # --- Tableau éditable ---
-st.subheader("📝 Attribution des numéros et rôles")
+# Copie pour éviter les conflits de session
+attrib_copy = st.session_state.attrib.copy()
+
+# Data editor
 edited = st.data_editor(
-    st.session_state.attrib,
+    attrib_copy,
     num_rows="dynamic",
     use_container_width=True,
-    hide_index=True,   # cache l’index
+    hide_index=True,
     height=700,
     column_config={
-        "Numéro National": st.column_config.SelectboxColumn(options=list(range(1, 24)), required=False),
+        "Numéro National": st.column_config.SelectboxColumn(options=list(range(1,24)), required=False),
         "Capitaine National": st.column_config.CheckboxColumn(),
-        "1ère ligne National": st.column_config.SelectboxColumn(options=["", "G", "D", "T", "GD", "GDT"]),
-        "Numéro Régional": st.column_config.SelectboxColumn(options=list(range(1, 24)), required=False),
+        "1ère ligne National": st.column_config.SelectboxColumn(options=["","G","D","T","GD","GDT"]),
+        "Numéro Régional": st.column_config.SelectboxColumn(options=list(range(1,24)), required=False),
         "Capitaine Régional": st.column_config.CheckboxColumn(),
-        "1ère ligne Régional": st.column_config.SelectboxColumn(options=["", "G", "D", "T", "GD", "GDT"]),
+        "1ère ligne Régional": st.column_config.SelectboxColumn(options=["","G","D","T","GD","GDT"]),
     }
 )
+
+# Écriture **seule** si la variable edited existe
+if edited is not None:
+    st.session_state.attrib = edited
+
 
 # --- Sauvegarder les modifications dans la session ---
 st.session_state.attrib = edited
