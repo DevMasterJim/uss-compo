@@ -3,7 +3,7 @@ import pandas as pd
 from io import BytesIO
 
 st.set_page_config(page_title="Attribution National / Régional", layout="wide")
-st.title("🏉 Attribution National & Régional 🏉")
+st.title("🏉 Composition National & Régional 🏉")
 
 # --- URL directe Google Drive ---
 url = "https://drive.google.com/uc?export=download&id=1y2eiaLo3xM8xWREgdTrVEuPlWKniDVql"
@@ -25,7 +25,7 @@ if missing:
 df = df[colonnes_utiles].copy()
 
 # Transformation Présence
-mapping_presence = {"A": "❌", "P": "✅", "C": "❓"}
+mapping_presence = {"A": "❌", "P": "✅", "C": "❔"}
 df["Présence"] = df["Présence"].map(mapping_presence).fillna("")
 
 # --- Ne garder que les lignes valides (Nom et Présence non vides) ---
@@ -43,7 +43,6 @@ if "attrib" not in st.session_state:
     st.session_state.attrib = df.copy()
 
 # --- Tableau éditable ---
-st.subheader("📝 Attribution des numéros et rôles")
 edited = st.data_editor(
     st.session_state.attrib,
     num_rows="dynamic",
